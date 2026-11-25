@@ -14,39 +14,48 @@ SENTRY captures network flows from a selected interface, classifies suspicious a
 - Alert-specific and general AI chat, plus PDF reports.
 - SQLite persistence for alert and conversation history.
 
-## Requirements
+## Install prerequisites (Windows)
 
-- Python 3.11 or newer.
-- Windows users: Npcap for live packet capture; administrator privileges may be needed for the selected interface.
-- CICIDS2017 and/or CICIDS2018 flow datasets for model training if a compatible trained model is not already available.
-- Optional Groq API key for AI chat and generated report narratives.
-
-## Run locally
-
-1. Create and activate a virtual environment:
+1. Install Python 3.11 or newer from [python.org](https://www.python.org/downloads/windows/) or with Windows Package Manager:
 
    ```powershell
-   py -m venv .venv
-   .\.venv\Scripts\Activate.ps1
+   winget install --id Python.Python.3.11 -e
    ```
 
-2. Install dependencies:
+   Close and reopen PowerShell afterward, then check `py --version`.
 
-   ```powershell
-   python -m pip install -r requirements.txt
-   ```
+2. Install [Npcap](https://npcap.com/#download) if you need live packet capture. Use the official installer and its default compatibility options. Capture only interfaces and traffic you are authorized to monitor. Run the application with the minimum permissions required by your selected interface.
+3. Optional: create a Groq account/API key only if you want AI chat and narrative reports. Keep keys in your local `.env`; never add them to source control.
+4. Optional for the separate Java CLI: install JDK 17 and Maven. These are not required to run the Flask website.
 
-3. Copy `.env.example` to `.env`. Add a Groq API key only if you want to use AI features.
-4. Put compatible CICIDS datasets in `data/` if model training is required.
-5. Start the server:
+## Install and run SENTRY
 
-   ```powershell
-   python app.py
-   ```
+From PowerShell in the project folder:
 
-6. Open <http://127.0.0.1:5000>.
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+python app.py
+```
 
-The application binds to localhost by default. Do not expose it directly to the public internet: authentication and user/role authorization are not implemented. For production, deploy behind an appropriately configured HTTPS reverse proxy, set `FLASK_ENV=production`, `SENTRY_SESSION_SECRET`, and `SENTRY_TRUSTED_ORIGINS`, and add an authentication layer.
+Open <http://127.0.0.1:5000>. Add a Groq key to `.env` only if you intend to use AI features. Put compatible CICIDS2017 and/or CICIDS2018 flow datasets in `data/` if model training is required. Dataset files, trained models, captures, databases, and `.env` are intentionally excluded from the public repository.
+
+The app binds to localhost by default. Authentication and user/role authorization are not implemented, so do not expose it directly to the public internet. For a production deployment, use a properly configured HTTPS reverse proxy, set `FLASK_ENV=production`, `SENTRY_SESSION_SECRET`, and `SENTRY_TRUSTED_ORIGINS`, and add authentication and authorization.
+
+## Safe validation
+
+- Keep Windows Firewall enabled. SENTRY does not require disabling the firewall for ordinary local operation.
+- For a safe smoke test, open the dashboard and check that its status endpoint responds:
+
+  ```powershell
+  Invoke-RestMethod http://127.0.0.1:5000/api/status
+  ```
+
+- To evaluate detection quality, use the included model-evaluation page and authorized, labeled CICIDS datasets in a controlled environment. Use offline/replay evaluation or a dedicated isolated lab you own; do not generate attack traffic against public networks, third-party systems, or devices without explicit authorization.
+- Stop live capture when testing is finished. Do not weaken host protections or expose the development server to the internet.
 
 ## Configuration
 
