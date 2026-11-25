@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Reports</h1>
+<p class="lede">Generate a report for one specific detection, or a full summary of everything this session.</p>
+
+<div class="card">
+  <h2>Single Alert Report</h2>
+  <div class="capture-bar" style="margin-top:10px;">
+    <select id="alert-select" class="iface-select"><option value="">Loading detected alerts...</option></select>
+    <button id="gen-alert-report-btn" class="capture-btn">GENERATE</button>
+  </div>
+  <div id="alert-report-body" style="display:none; margin-top:14px;">
+    <p id="alert-report-text" class="lede" style="margin:0; white-space:pre-wrap;">--</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Full Session Report</h2>
+  <div class="capture-bar" style="margin-top:6px;">
+    <button id="gen-report-btn" class="capture-btn">GENERATE</button>
+    <a href="/api/report/pdf" class="capture-btn" style="text-decoration:none;">DOWNLOAD PDF</a>
+  </div>
+
+  <div id="report-body" style="margin-top:16px; display:none;">
+    <div class="stat-row">
+      <div class="stat-chip"><span class="stat-value" id="r-total">0</span><span class="stat-key">flows analyzed</span></div>
+      <div class="stat-chip alert"><span class="stat-value" id="r-flagged">0</span><span class="stat-key">flagged</span></div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <h2>By category</h2>
+      <ul id="r-by-label"></ul>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <h2>Top source IPs</h2>
+      <ul id="r-top-ips"></ul>
+    </div>
+
+    <div>
+      <h2>Summary</h2>
+      <p id="r-narrative" class="lede" style="margin:0; white-space:pre-wrap;">--</p>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/report.js') }}"></script>
+{% endblock %}

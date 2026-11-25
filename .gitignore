@@ -1,0 +1,44 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.venv/
+*.egg-info/
+
+# Flask / instance data
+instance/
+.pytest_cache/
+
+# Model, captures, datasets, and local state
+data/*
+!data/.gitkeep
+data_out/*
+!data_out/.gitkeep
+*.pkl
+*.db
+*.sqlite
+*.sqlite3
+*.csv
+*.parquet
+*.pcap
+*.pcapng
+*.pdf
+
+# Test and tool output
+htmlcov/
+.coverage
+coverage.xml
+*.log
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="topline">
+  <div>
+    <h1>Live Feed</h1>
+    <p class="lede">Real packets from the interface you choose below &mdash; nothing is generated. Nothing is scored until capture is started.</p>
+  </div>
+</div>
+
+<div class="capture-bar">
+  <select id="iface-select" class="iface-select"><option>Loading interfaces...</option></select>
+  <button id="capture-btn" class="capture-btn">START CAPTURE</button>
+  <button id="clear-history-btn" class="capture-btn stop" title="Deletes all saved alerts and resets counters">CLEAR HISTORY</button>
+  <span id="capture-msg" class="capture-msg"></span>
+</div>
+
+<div class="stat-row">
+  <div class="stat-chip"><span class="stat-value" id="stat-flows">0</span><span class="stat-key">flows analyzed</span></div>
+  <div class="stat-chip alert"><span class="stat-value" id="stat-threats">0</span><span class="stat-key">flagged</span></div>
+  <div class="stat-chip"><span class="stat-value" id="stat-uptime">0s</span><span class="stat-key">uptime</span></div>
+</div>
+
+<div class="radar-panel">
+  <div class="radar-panel-head">
+    <span class="radar-rec"><span class="radar-rec-dot"></span> SCAN RADAR</span>
+    <span class="radar-clock" id="radar-clock">--:--:--</span>
+  </div>
+  <div class="radar-stage">
+    <svg viewBox="0 0 220 220" class="radar-svg" width="220" height="220">
+      <circle cx="110" cy="110" r="100" class="radar-ring"/>
+      <circle cx="110" cy="110" r="80" class="radar-ring"/>
+      <circle cx="110" cy="110" r="60" class="radar-ring"/>
+      <circle cx="110" cy="110" r="40" class="radar-ring"/>
+      <circle cx="110" cy="110" r="20" class="radar-ring"/>
+      <line x1="110" y1="10" x2="110" y2="210" class="radar-cross"/>
+      <line x1="10" y1="110" x2="210" y2="110" class="radar-cross"/>
+      <g class="radar-ticks"><g id="radar-ticks-group"></g></g>
+      <g class="radar-sweep">
+        <path d="M110,110 L110,10 A100,100 0 0,1 195,60 Z" class="radar-sweep-fill"/>
+      </g>
+      <g id="radar-blips"></g>
+    </svg>
+    <span class="radar-caption" title="Visual only -- position is stylized, not a real location">flow activity &middot; not geolocation</span>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="col-scan">
+    <div class="section-head"><h2>Scanning</h2></div>
+    <div class="device">
+      <div class="device-bezel">
+        <div class="device-screen" id="scan-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-detect">
+    <div class="section-head">
+      <h2>Detected Anomalies</h2>
+      <span class="section-count" id="detected-count">0</span>
+    </div>
+    <div class="device">
+      <div class="device-bezel bezel-alert">
+        <div class="device-screen" id="detect-feed">
+          <p class="empty-note">No anomalies detected yet. Start capture and generate some traffic to see real detections here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('clear-history-btn').addEventListener('click', async function () {
+    if (!confirm('Delete all saved alerts and reset the counters?')) return;
+    try {
+      await fetch('/api/history/clear', { method: 'POST' });
+    } catch (e) {
+      alert('Could not clear history: ' + e);
+      return;
+    }
+    location.reload();
+  });
+</script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

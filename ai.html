@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>AI</h1>
+<p class="lede">
+  Ask general SOC questions below, or jump into a conversation about a
+  specific detected anomaly from the history underneath.
+</p>
+
+<div class="card">
+  <h2>Ask AI</h2>
+  <div class="chat-box terminal" style="margin-top:10px;">
+    <div class="chat-history" id="chat-history">
+      {% for m in history %}
+        <div class="chat-msg chat-{{ m.role }}">{{ m.content }}</div>
+      {% endfor %}
+      {% if not history %}
+        <div class="chat-hint">Try asking: "What is a port scan?" or "How do I tell a DoS from normal traffic?"</div>
+      {% endif %}
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Ask a security question...">
+      <button id="chat-send">SEND</button>
+    </div>
+  </div>
+  <div style="margin-top:12px;">
+    <button id="chat-clear" class="ask-ai-btn">CLEAR CONVERSATION</button>
+  </div>
+</div>
+
+<div class="section-head" style="margin-top:28px;">
+  <h2>Detection History</h2>
+  <span class="section-count">{{ alerts|length }}</span>
+</div>
+
+{% if not alerts %}
+  <div class="card">
+    <p style="margin:0;">No detections yet &mdash; anomalies get logged here automatically once capture is running. Go to Live Feed and start capture.</p>
+  </div>
+{% else %}
+  <div class="ai-list">
+    {% for a in alerts %}
+      <a class="ai-row" href="{{ url_for('chat_page', aid=a.id) }}">
+        <div class="row-top">
+          <span class="flow-line"><b>{{ a.time }}</b> &nbsp; {{ a.src }} &rarr; {{ a.dst }} &nbsp; {{ a.protocol }}</span>
+          <span>
+            <span class="tag {{ 'attack' if a.is_attack else 'benign' }}">{{ a.label }}</span>
+            {% if a.is_anomaly %}<span class="tag anomaly">anomaly</span>{% endif %}
+            <span class="flow-line">conf {{ a.confidence }}%</span>
+          </span>
+        </div>
+        <div class="ai-row-footer">
+          {{ a.message_count }} message{{ "s" if a.message_count != 1 }} &middot; Alert #{{ a.id }}
+          <span class="ai-open">OPEN CHAT &rarr;</span>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<script>
+  (function () {
+    // Guarded formatter -- falls back to plain text if markdown.js didn't load,
+    // instead of throwing and killing the rest of this script.
+    function fmt(text) {
+      try {
+        return (typeof window.sentryFormat === 'function') ? window.sentryFormat(text) : text;
+      } catch (e) {
+        return text;
+      }
+    }
+
+    var historyEl = document.getElementById('chat-history');
+    var inputEl = document.getElementById('chat-input');
+    var sendBtn = document.getElementById('chat-send');
+    var clearBtn = document.getElementById('chat-clear');
+    var busy = false;
+
+    try {
+      historyEl.querySelectorAll('.chat-assistant').forEach(function (el) {
+        el.innerHTML = fmt(el.textContent);
+      });
+    } catch (e) { /* non-fatal -- keep going */ }
+
+    function addMsg(role, text) {
+      var hint = historyEl.querySelector('.chat-hint');
+      if (hint) hint.remove();
+      var div = document.createElement('div');
+      div.className = 'chat-msg chat-' + role;
+      div.textContent = text;
+      historyEl.appendChild(div);
+      historyEl.scrollTop = historyEl.scrollHeight;
+      return div;
+    }
+
+    async function send() {
+      var text = inputEl.value.trim();
+      if (!text || busy) return;
+      busy = true;
+      inputEl.value = '';
+      addMsg('user', text);
+      var pending = addMsg('assistant', 'Thinking...');
+      try {
+        var res = await fetch('/api/chat/general', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        var data = await res.json();
+        if (data.reply) pending.innerHTML = fmt(data.reply);
+        else pending.textContent = data.error || 'No reply.';
+      } catch (e) {
+        pending.textContent = 'Request failed: ' + e;
+      }
+      historyEl.scrollTop = historyEl.scrollHeight;
+      busy = false;
+    }
+
+    sendBtn.addEventListener('click', send);
+    inputEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') send();
+    });
+
+    clearBtn.addEventListener('click', async function () {
+      try {
+        await fetch('/api/chat/general/clear', { method: 'POST' });
+        historyEl.innerHTML = '<div class="chat-hint">Conversation cleared.</div>';
+      } catch (e) {
+        alert('Could not clear: ' + e);
+      }
+    });
+
+    historyEl.scrollTop = historyEl.scrollHeight;
+  })();
+</script>
+
+{% endblock %}
