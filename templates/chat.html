@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+
+<a href="{{ url_for('dashboard') }}" class="back-link">&larr; Back to live feed</a>
+
+<h1>Ask AI &mdash; Alert #{{ alert.id }}</h1>
+
+<p class="lede">
+  Chatting about this specific flow. Answers come from Groq's free API &mdash;
+  ask as many follow-ups as you want.
+</p>
+
+<div class="card alert-summary">
+  <div class="row-top">
+    <span class="flow-line">
+      <b>{{ alert.time }}</b> &nbsp; {{ alert.src }} &rarr; {{ alert.dst }} &nbsp; {{ alert.protocol }}
+    </span>
+    <span>
+      <span class="tag {{ 'attack' if alert.is_attack else 'benign' }}">{{ alert.label }}</span>
+      {% if alert.is_anomaly %}<span class="tag anomaly">anomaly</span>{% endif %}
+      <span class="flow-line">conf {{ alert.confidence }}%</span>
+    </span>
+  </div>
+  <div class="features">
+    top features:
+    {% for f in alert.top_features %}
+      <b>{{ f.feature }}</b> ({{ f.impact }}){{ ", " if not loop.last }}
+    {% endfor %}
+  </div>
+</div>
+
+<div class="chat-box terminal">
+  <div class="chat-history" id="chat-history">
+    {% for m in history %}
+      <div class="chat-msg chat-{{ m.role }}">{{ m.content }}</div>
+    {% endfor %}
+    {% if not history %}
+      <div class="chat-hint">Try asking: "What should I do about this?" or "Why was this flagged as an anomaly?"</div>
+    {% endif %}
+  </div>
+
+  <form id="chat-form" class="chat-input-row" data-alert-id="{{ alert.id }}">
+    <input type="text" id="chat-input" placeholder="Ask about this alert..." autocomplete="off">
+    <button type="submit" id="chat-send">SEND</button>
+  </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+
+{% endblock %}

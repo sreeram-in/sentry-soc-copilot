@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Model Evaluation</h1>
+<p class="lede">
+  Precision / recall / F1 computed on a held-out 20% test split the model
+  never trained on -- not eyeballed from live demo traffic.
+</p>
+
+<div class="stat-row">
+  <div class="stat-chip"><span class="stat-value">{{ eval_accuracy }}%</span><span class="stat-key">test accuracy</span></div>
+  <div class="stat-chip"><span class="stat-value">{{ "{:,}".format(eval_train_size) }}</span><span class="stat-key">train flows</span></div>
+  <div class="stat-chip"><span class="stat-value">{{ "{:,}".format(eval_test_size) }}</span><span class="stat-key">test flows</span></div>
+</div>
+
+<div class="card">
+  <h2>Per-class metrics</h2>
+  <div class="eval-table-wrap">
+    <table class="eval-table metrics-table">
+      <thead>
+        <tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr>
+      </thead>
+      <tbody>
+        {% for label in eval_labels %}
+        {% set m = eval_report.get(label, {}) %}
+        <tr>
+          <td class="class-name">{{ label }}</td>
+          {% for key in ['precision', 'recall', 'f1-score'] %}
+          {% set v = m.get(key, 0) %}
+          <td>
+            <div class="metric-bar">
+              <div class="metric-fill {{ 'good' if v >= 0.85 else ('mid' if v >= 0.5 else 'bad') }}"
+                   data-width="{{ (v * 100) | round(0, 'floor') | int }}"></div>
+              <span>{{ "%.2f"|format(v) }}</span>
+            </div>
+          </td>
+          {% endfor %}
+          <td class="support-cell">{{ "{:,}".format(m.get('support', 0) | int) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot good"></span> &ge; 0.85</span>
+    <span class="legend-item"><span class="legend-dot mid"></span> 0.50&ndash;0.85</span>
+    <span class="legend-item"><span class="legend-dot bad"></span> &lt; 0.50</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Confusion matrix</h2>
+  <p class="matrix-note">Rows = actual class, columns = predicted class. Diagonal = correct predictions; darker off-diagonal cells = more misclassifications.</p>
+  <div class="eval-table-wrap">
+    <table class="eval-table confusion-table">
+      <thead>
+        <tr>
+          <th></th>
+          {% for label in eval_labels %}<th title="{{ label }}">{{ label[:4] }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in eval_confusion %}
+        {% set row_idx = loop.index0 %}
+        {% set row_max = row | max %}
+        <tr>
+          <th class="row-label">{{ eval_labels[row_idx] }}</th>
+          {% for cell in row %}
+          {% set is_diag = (loop.index0 == row_idx) %}
+          {% set intensity = (cell / row_max) if row_max > 0 else 0 %}
+          <td class="{{ 'diag' if is_diag }} {{ 'zero' if cell == 0 }}"
+              {% if not is_diag and cell > 0 %}data-alpha="{{ (0.1 + intensity * 0.4) | round(2) }}"{% endif %}>{{ cell }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.metric-fill[data-width]').forEach(function (el) {
+    el.style.width = el.dataset.width + '%';
+  });
+  document.querySelectorAll('.confusion-table td[data-alpha]').forEach(function (el) {
+    el.style.background = 'rgba(184,84,63,' + el.dataset.alpha + ')';
+  });
+</script>
+
+{% endblock %}

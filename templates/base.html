@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ page_title }}</title>
+<meta name="description" content="{{ meta_description }}">
+{% if noindex_page %}<meta name="robots" content="noindex, nofollow">{% endif %}
+<link rel="canonical" href="{{ canonical_url }}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ page_title }}">
+<meta property="og:description" content="{{ meta_description }}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#171615">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<link rel="icon" href="{{ url_for('favicon') }}" type="image/svg+xml">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SENTRY SOC Copilot",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "Windows",
+  "description": "{{ meta_description }}"
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">MENU</button>
+    <a class="brand" href="{{ url_for('dashboard') }}" aria-label="SENTRY homepage">
+      <span class="brand-mark"></span>
+      <span class="brand-name">SENTRY</span>
+    </a>
+    <p class="brand-sub">Real-traffic NIDS</p>
+
+    <nav class="sidenav" id="site-nav" aria-label="Primary navigation">
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if active=='dashboard' else '' }}">Live Feed</a>
+      <a href="{{ url_for('ai_index') }}" class="{{ 'active' if active=='ai' else '' }}">AI</a>
+      <a href="{{ url_for('report') }}" class="{{ 'active' if active=='report' else '' }}">Report</a>
+      <a href="{{ url_for('model_eval') }}" class="{{ 'active' if active=='eval' else '' }}">Model Eval</a>
+      <a href="{{ url_for('about') }}" class="{{ 'active' if active=='about' else '' }}">About</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="status-line">
+        <span class="status-dot"></span> Model: {{ backend|default('--') }}
+      </div>
+      <div class="status-line dim" id="capture-status-line">Capture: checking...</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+<footer class="site-footer">
+  <span>&copy; {{ current_year }} SENTRY SOC Copilot</span>
+</footer>
+
+<script src="{{ url_for('static', filename='js/markdown.js') }}"></script>
+<script>
+  (function () {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    var csrf = meta ? meta.getAttribute('content') : '';
+    var originalFetch = window.fetch;
+    window.fetch = function (url, options) {
+      options = options || {};
+      if ((options.method || 'GET').toUpperCase() !== 'GET') {
+        options.headers = Object.assign({}, options.headers || {}, {'X-CSRF-Token': csrf});
+      }
+      return originalFetch(url, options);
+    };
+  })();
+  (function () {
+    var toggle = document.getElementById('menu-toggle');
+    var nav = document.getElementById('site-nav');
+    if (toggle && nav) {
+      toggle.addEventListener('click', function () {
+        var open = nav.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
+    var line = document.getElementById('capture-status-line');
+    function paint(cls, text) {
+      line.textContent = '';
+      var dot = document.createElement('span');
+      dot.className = 'status-dot ' + cls;
+      line.appendChild(dot);
+      line.appendChild(document.createTextNode(' ' + text));
+    }
+    function tick() {
+      fetch('/api/status').then(function (r) { return r.json(); }).then(function (s) {
+        if (s.error) paint('err', 'Capture error: ' + s.error);
+        else if (s.running) paint('', 'Capturing (' + s.active_flows + ' active)');
+        else paint('off', 'Capture stopped');
+      }).catch(function () { paint('err', 'Server unreachable'); });
+    }
+    tick();
+    setInterval(tick, 3000);
+  })();
+</script>
+</body>
+</html>

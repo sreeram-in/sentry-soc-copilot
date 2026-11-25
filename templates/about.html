@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>About this project</h1>
+<p class="lede">Explainable AI-Based SOC Copilot for Network Intrusion Detection and Anomaly Analysis.</p>
+
+<div class="card">
+  <h2>What's real here</h2>
+  <p>The live feed is built from real packets captured on a real network interface (via
+  scapy/Npcap) &mdash; not generated or replayed. Flows are extracted from those packets
+  using the same 5-tuple grouping approach as tools like CICFlowMeter, then scored the
+  moment they complete. The app's own dashboard traffic is explicitly excluded from
+  capture so it can never detect itself.</p>
+</div>
+
+<div class="card">
+  <h2>Pipeline</h2>
+  <ul>
+    <li>Real packet capture &amp; flow extraction &mdash; scapy, direction-independent 5-tuple flow tracking, 5s idle timeout</li>
+    <li>Supervised classification &mdash; {{ backend }}</li>
+    <li>Unsupervised anomaly detection &mdash; Isolation Forest, trained on normal traffic only</li>
+    <li>Chat &amp; report narrative &mdash; Groq free API, on-demand</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>Stack</h2>
+  <p>Flask &middot; scapy &middot; scikit-learn &middot; XGBoost &middot; Groq API &middot; vanilla JS &middot; hand-written CSS</p>
+</div>
+
+{% endblock %}

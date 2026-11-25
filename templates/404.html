@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="text-align:center; padding:48px 24px;">
+  <h1>404 &mdash; Page not found</h1>
+  <p class="lede" style="margin:10px auto 20px;">The page may have moved or the URL may be incorrect.</p>
+  <a class="capture-btn" href="{{ url_for('dashboard') }}">RETURN TO LIVE FEED</a>
+</div>
+{% endblock %}
